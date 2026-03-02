@@ -5,6 +5,7 @@ from collections.abc import AsyncGenerator, Callable
 from enum import StrEnum, auto
 from http import HTTPStatus
 import json
+import os
 from pathlib import Path
 from threading import Thread
 import time
@@ -402,6 +403,8 @@ class AgentLoop:
             "user-agent": get_user_agent(provider.backend),
             "x-affinity": self.session_id,
         }
+        if (dp_rank := os.environ.get("VIBE_DP_RANK")):
+            headers["X-data-parallel-rank"] = dp_rank
         if (
             provider.backend == Backend.MISTRAL
             and self._current_user_message_id is not None
