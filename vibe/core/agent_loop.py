@@ -18,6 +18,7 @@ from vibe.cli.terminal_setup import detect_terminal
 from vibe.core.agents.manager import AgentManager
 from vibe.core.agents.models import AgentProfile, BuiltinAgentName
 from vibe.core.config import Backend, ModelConfig, ProviderConfig, VibeConfig
+from vibe.core.hooks import HookEvent, run_hooks
 from vibe.core.llm.backend.factory import BACKEND_FACTORY
 from vibe.core.llm.exceptions import BackendError
 from vibe.core.llm.format import (
@@ -288,8 +289,15 @@ class AgentLoop:
 
     async def act(self, msg: str) -> AsyncGenerator[BaseEvent]:
         self._clean_message_history()
-        async for event in self._conversation_loop(msg):
-            yield event
+        try:
+            async for event in self._conversation_loop(msg):
+                yield event
+        finally:
+            await run_hooks(
+                self.config.hooks,
+                HookEvent.STOP,
+                {"session_id": self.session_id},
+            )
 
     @property
     def teleport_service(self) -> TeleportService:
@@ -455,6 +463,12 @@ class AgentLoop:
             raise AgentLoopError("User message must have a message_id")
 
         yield UserMessageEvent(content=user_msg, message_id=user_message.message_id)
+
+        await run_hooks(
+            self.config.hooks,
+            HookEvent.USER_PROMPT_SUBMIT,
+            {"session_id": self.session_id},
+        )
 
         try:
             should_break_loop = False
@@ -654,6 +668,16 @@ class AgentLoop:
                 tool_call_id=tool_call.call_id,
             )
             self.stats.tool_calls_succeeded += 1
+
+            await run_hooks(
+                self.config.hooks,
+                HookEvent.POST_TOOL_USE,
+                {
+                    "session_id": self.session_id,
+                    "tool_name": tool_call.tool_name,
+                    "tool_input": tool_call.args_dict,
+                },
+            )
 
         except asyncio.CancelledError:
             cancel = str(
@@ -922,6 +946,15 @@ class AgentLoop:
                 approval_type=ToolPermission.ASK,
                 feedback="Tool execution not permitted.",
             )
+        await run_hooks(
+            self.config.hooks,
+            HookEvent.NOTIFICATION,
+            {
+                "session_id": self.session_id,
+                "type": "permission_prompt",
+                "tool_name": tool_name,
+            },
+        )
         response, feedback = await self.approval_callback(tool_name, args, tool_call_id)
 
         match response:

@@ -23,6 +23,7 @@ import tomli_w
 from vibe.core.config.harness_files import get_harness_files_manager
 from vibe.core.paths import GLOBAL_ENV_FILE, SESSION_LOG_DIR
 from vibe.core.prompts import SystemPrompt
+from vibe.core.hooks import HooksConfig
 from vibe.core.tools.base import BaseToolConfig
 
 
@@ -351,6 +352,7 @@ class VibeConfig(BaseSettings):
     enable_notifications: bool = True
     api_timeout: float = 720.0
     auto_compact_threshold: int = 200_000
+    hooks: HooksConfig = Field(default_factory=HooksConfig)
 
     # TODO(vibe-nuage): remove exclude=True once the feature is publicly available
     nuage_enabled: bool = Field(default=False, exclude=True)

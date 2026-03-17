@@ -24,6 +24,7 @@ from vibe.core.config._settings import (
     VibeConfig,
     load_dotenv_values,
 )
+from vibe.core.hooks import HooksConfig
 
 __all__ = [
     "DEFAULT_MISTRAL_API_ENV_KEY",
@@ -32,6 +33,7 @@ __all__ = [
     "DEFAULT_TRANSCRIBE_MODELS",
     "DEFAULT_TRANSCRIBE_PROVIDERS",
     "Backend",
+    "HooksConfig",
     "MCPHttp",
     "MCPServer",
     "MCPStdio",
