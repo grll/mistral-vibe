@@ -199,6 +199,8 @@ def get_user_agent(backend: Backend | None) -> str:
 
 
 def _is_retryable_http_error(e: Exception) -> bool:
+    if isinstance(e, (httpx.TimeoutException, httpx.ConnectError)):
+        return True
     if isinstance(e, httpx.HTTPStatusError):
         return e.response.status_code in {408, 409, 425, 429, 500, 502, 503, 504}
     return False
